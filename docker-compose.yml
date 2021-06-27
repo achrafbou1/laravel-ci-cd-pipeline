@@ -1,0 +1,76 @@
+version: '3.7'
+services:
+  #PHP Service
+  example_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: example_app
+    container_name: example_app
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=app
+      - SERVICE_TAGS=dev
+    working_dir: /var/www/html
+    volumes:
+      - example-app-volume:/var/www/html/
+      - ./docker/php/laravel.ini:/usr/local/etc/php/conf.d/laravel.ini
+      - "example-phpsocket:/var/run"
+      - ./docker/zz-docker.conf:/usr/local/etc/php-fpm.d/zz-docker.conf
+    networks:
+      - example-app-network
+    depends_on:
+      - example_db
+
+  #Nginx Service
+  example_webserver:
+    image: nginx:alpine
+    container_name: example_webserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - example-app-volume:/var/www/html/
+      - ./docker/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+      - "example-phpsocket:/var/run"
+    networks:
+      - example-app-network
+
+  #MySQL Service
+  example_db:
+    image: mysql:5.7.32
+    container_name: example_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: laravel
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - example-dbdata:/var/lib/mysql/
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - example-app-network
+  
+  example_phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.1.1
+    container_name: example_phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    restart: always
+    ports:
+      - 8081:80
+    networks:
+      - example-app-network
+
+#Docker Networks
+networks:
+  example-app-network:
+    driver: bridge
+#Volumes
+volumes:
+  example-dbdata:
+    driver: local
+  example-phpsocket:
+  example-app-volume:
