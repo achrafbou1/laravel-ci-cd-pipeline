@@ -36,8 +36,6 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Copy existing application directory contents to the working directory
 COPY . /var/www/html
 
-RUN chgrp -R www-data storage
-RUN chown -R www-data storage
 
 COPY .env.docker /var/www/html/.env
 
@@ -48,6 +46,7 @@ RUN php artisan cache:clear
 RUN php artisan view:cache
 
 # Assign permissions of the working directory to the www-data user
+RUN chgrp -R www-data /var/www/html/storage
 RUN chown -R www-data:www-data \ 
         /var/www/html/storage \
         /var/www/html/bootstrap/cache
